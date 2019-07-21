@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>wikigame</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+    	canvas { background: #eee; display: block; margin: 0 auto; }
+    </style>
+    <input placeholder="Enter some text" style="position:absolute;left:100px;top:300px;width:600px;" name="name"/>
+</head>
+<body>
+
+<p align="center">
+<canvas id="myCanvas" width="480" height="320"></canvas>
+<p align="center">
+
+<script type="text/javascript">
+	var canvas = document.getElementById("myCanvas");
+	var ctx = canvas.getContext("2d");
+	ctx.font = '12px serif';
+
+	var x = canvas.width/2;
+	var y = canvas.height/2;
+	var x2 = canvas.width/2;
+	var y2 = canvas.height/2;
+
+	var t = 5;
+	var str = "";
+	var inp = "";
+	var myImg = new Image(100,200);
+	// myImg.onload = function() {
+	// 	ctx.drawImage(myImg, 0, 0);
+	// };
+
+	function getRandomArticle() {
+		const endpoint = "https://en.wikipedia.org/api/rest_v1/page/random/mobile-sections";
+
+		fetch(endpoint)
+			.then(response => response.json())
+			.then(data => {
+				str = data;
+				})
+			.catch(() => console.log('An error has occurred'));
+	}
+
+	const input = document.querySelector('input');
+	input.addEventListener('keyup', function onEvent(e) { 
+		if (e.key === "Enter") {
+			// clear both input and log
+			// check game logic (guess vs. answer -> transition)
+			if(str.lead.normalizedtitle == input.value){
+				getRandomArticle();
+			}
+			speechSynthesis.speak(new SpeechSynthesisUtterance('What a terrible guess.'));
+			input.value = "";
+		}
+	});
+
+	function draw() {
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.beginPath();
+		//ctx.arc(x, y, 10, 0, Math.PI*2);
+		//ctx.arc(x2, y2, 10, 0, Math.PI*2);
+		ctx.fillStyle = "#0095DD";
+		ctx.fillText(str.lead.normalizedtitle, 10, 25);
+		ctx.fillText(inp, 10, 50);
+		let obj = str.lead.image.urls;
+		res = Object.keys(obj).map(key => obj[key]);
+		myImg.src = res[0];
+		ctx.drawImage(myImg,100,100);
+		ctx.fill();
+		ctx.closePath();
+
+		x = (canvas.height/1.5) + 100 * Math.sin(3 * t + Math.PI / 4);
+		y = (canvas.width/3) + 75 * Math.sin(5 * t);
+		x2 = (canvas.height/1.5) + 100 * Math.sin(3 * (t - 0.1) + Math.PI / 4);
+		y2 = (canvas.width/3) + 75 * Math.sin(5 * (t - 0.1));
+
+    	t += 0.01;
+	}
+
+	getRandomArticle();
+	setInterval(draw, 10);
+</script>
+
+</body>
+</html>
