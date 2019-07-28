@@ -7,12 +7,12 @@
     	* { padding: 0; margin: 0; }
     	canvas { background: #eee; display: block; margin: 0 auto; }
     </style>
-    <input placeholder="Enter some text" style="position:absolute;left:100px;top:300px;width:600px;" name="name"/>
+    <input placeholder="Enter some text" style="position:absolute;left:100px;top:600px;width:600px;" name="name"/>
 </head>
 <body>
 
 <p align="center">
-<canvas id="myCanvas" width="480" height="320"></canvas>
+<canvas id="myCanvas" width="960" height="640"></canvas>
 <p align="center">
 
 <script type="text/javascript">
@@ -27,22 +27,33 @@
 
 	var t = 5;
 	var str = "";
-	var inp = "";
 	var myImg = new Image(100,200);
+	var html;
+	var change = true;
+	var translated_text = "";
+	var n;
+
+	// myImg.onload = function() {
+	// 	ctx.drawImage(myImg, 0, 0);
+	// };
 
 	async function getRandomArticle() {
 		const endpoint = "https://en.wikipedia.org/api/rest_v1/page/random/mobile-sections";
-			try {
-				const response = await fetch(endpoint);
-				const data = await response.json();
-				const passed = await filter(data);
-				if (!passed) await getRandomArticle();
-				str = data;
+		try {
+			const response = await fetch(endpoint);
+			const data = await response.json();
+			const passed = await filter(data);
+			if (!passed) await getRandomArticle();
+			str = data;
+			html = str.lead.sections[0].text;
+			html = html.replace(new RegExp(str.lead.normalizedtitle, 'i'), "CENSORED");
+			//html = (str.remaining.sections[Math.max(0,Math.floor(Math.random()*str.remaining.sections.length - 1))]).text;
+			change = true;
+		}
+		 catch (error) {
+			console.log(error);
 			}
-			 catch (error) {
-    			console.log(error);
-  			}
-	}
+  		}
 
 	const input = document.querySelector('input');
 	input.addEventListener('keyup', function onEvent(e) { 
@@ -59,8 +70,30 @@
 
 	async function filter(data){
 		console.log(data.lead.sections[0].text.includes("infobox"));
-		return data.lead.sections[0].text.includes("infobox")&&
-			(data.lead.revision);
+		return data.lead.sections[0].text.includes("infobox");
+			// (data.lead.revision);
+		}
+
+	async function translate(text, lang){
+		// lang : string (ex: 'en-ru')
+		const key = 'trnsl.1.1.20190728T002925Z.a6ed32bedce2d146.600adea4f41cf3dca7016feced65fe2d48e1bda6';
+		let endpoint = "https://translate.yandex.net/api/v1.5/tr.json/translate";
+		endpoint += "?key=";
+		endpoint += key;
+		endpoint += "&text=";
+		endpoint += text;
+		endpoint += "&lang=";
+		endpoint += lang;
+
+		let response = await(fetch(endpoint));
+		let data = await response.json();
+		return data;
+	}
+
+	function paraphrase(text){
+		translate(text, "en-ru").then(data =>
+			translate(data.text[0], "ru-en").then(ans =>
+				translated_text = ans.text[0]));
 	}
 
 	function draw() {
@@ -70,10 +103,23 @@
 		//ctx.arc(x2, y2, 10, 0, Math.PI*2);
 		ctx.fillStyle = "#0095DD";
 		ctx.fillText(str.lead.normalizedtitle, 10, 25);
-		ctx.fillText(inp, 10, 50);
+
+		// hint/paraphrasing section
+		var div = document.createElement("div");
+		div.innerHTML = html;
+		var text = div.textContent || div.innerText || "";
+		var res = text.split(".");
+		if(change) {
+			n = Math.floor(Math.random() * res.length);
+			paraphrase(res[n]);
+			change = !change; 
+		} 
+		ctx.fillText(translated_text, 10, 50);
+
 		let obj = str.lead.image.urls;
 		res = Object.keys(obj).map(key => obj[key]);
 		myImg.src = res[0];
+
 		ctx.drawImage(myImg,100,100);
 		ctx.fill();
 		ctx.closePath();
