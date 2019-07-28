@@ -29,19 +29,19 @@
 	var str = "";
 	var inp = "";
 	var myImg = new Image(100,200);
-	// myImg.onload = function() {
-	// 	ctx.drawImage(myImg, 0, 0);
-	// };
 
-	function getRandomArticle() {
+	async function getRandomArticle() {
 		const endpoint = "https://en.wikipedia.org/api/rest_v1/page/random/mobile-sections";
-
-		fetch(endpoint)
-			.then(response => response.json())
-			.then(data => {
+			try {
+				const response = await fetch(endpoint);
+				const data = await response.json();
+				const passed = await filter(data);
+				if (!passed) await getRandomArticle();
 				str = data;
-				})
-			.catch(() => console.log('An error has occurred'));
+			}
+			 catch (error) {
+    			console.log(error);
+  			}
 	}
 
 	const input = document.querySelector('input');
@@ -56,6 +56,12 @@
 			input.value = "";
 		}
 	});
+
+	async function filter(data){
+		console.log(data.lead.sections[0].text.includes("infobox"));
+		return data.lead.sections[0].text.includes("infobox")&&
+			(data.lead.revision);
+	}
 
 	function draw() {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -79,7 +85,6 @@
 
     	t += 0.01;
 	}
-
 	getRandomArticle();
 	setInterval(draw, 10);
 </script>
