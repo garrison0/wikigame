@@ -27,6 +27,7 @@
 
 	var t = 5;
 	var str = "";
+	var data;
 	var myImg = new Image(100,200);
 	var html;
 	var change = true;
@@ -40,11 +41,11 @@
 	async function getRandomArticle() {
 		const endpoint = "https://en.wikipedia.org/api/rest_v1/page/random/mobile-sections";
 		try {
-			const response = await fetch(endpoint);
-			const data = await response.json();
-			const passed = await filter(data);
+			var response = await fetch(endpoint);
+			data = await response.json();
+			var passed = await filter(data);
 			if (!passed) await getRandomArticle();
-			str = data;
+			str = await data;
 			html = str.lead.sections[0].text;
 			html = html.replace(new RegExp(str.lead.normalizedtitle, 'i'), "CENSORED");
 			//html = (str.remaining.sections[Math.max(0,Math.floor(Math.random()*str.remaining.sections.length - 1))]).text;
@@ -68,10 +69,12 @@
 		}
 	});
 
-	async function filter(data){
-		console.log(data.lead.sections[0].text.includes("infobox"));
-		return data.lead.sections[0].text.includes("infobox");
-			// (data.lead.revision);
+	async function filter(data){ // true if passes filter 
+		var len = data.lead.sections.length;
+		if (len<8) return false;
+		if (!data.lead.sections[0].text.includes("infobox")) return false;
+		if (data.lead.sections[0].text.includes("ambox")) return false;
+		return true;
 		}
 
 	async function translate(text, lang){
