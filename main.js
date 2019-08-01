@@ -16,11 +16,12 @@ var translated_text = "";
 var n;
 var res;
 var data;
-var r = 0.99;
+var r = 0.5;
 var synonyms;
 
 var ed = require('edit-distance');
 var randomWords = require('random-words');
+var nlp = require('compromise');
 // myImg.onload = function() {
 //  ctx.drawImage(myImg, 0, 0);
 // };
@@ -64,14 +65,15 @@ async function getRandomArticle() {
     if (!passed) await getRandomArticle();
     str = data;
     
-    html = str.lead.sections[0].text;
-    html = html.replace(new RegExp(str.lead.normalizedtitle, 'i'), "CENSORED");
+    //html = str.lead.sections[0].text;
+    html = (str.remaining.sections[Math.max(0,Math.floor(Math.random()*str.remaining.sections.length - 3))]).text;
     var div = document.createElement("div");
     div.innerHTML = html;
     var text = div.textContent || div.innerText || "";
     
-    res = text.split(".");
-    //html = (str.remaining.sections[Math.max(0,Math.floor(Math.random()*str.remaining.sections.length - 1))]).text;
+    var doc = nlp(text);
+    res = doc.sentences().toContinuous().out('array');
+
     change = true;
 
     if(str.lead.normalizedtitle.split(" ").length == 1){
@@ -126,6 +128,7 @@ async function filter(data, response){
   }
   let title = data.lead.normalizedtitle;
   return !data.lead.disambiguation 
+      && (data.lead.sections.length > 5)
       && data.lead.sections[0].text.includes("infobox")
       && (title.split(" ").length <= 2)
       && !(title.includes('(') || title.includes(')')); 
@@ -149,8 +152,18 @@ async function translate(text, lang){
 
 function paraphrase(text){
   translate(text, "en-ru").then(data =>
-    translate(data.text[0], "ru-en").then(ans =>
-      translated_text = ans.text[0]));
+    translate(data.text[0], "ru-en").then(function(ans){
+      translated_text = ans.text[0]
+      // censor title from translated text that is displayed
+      let arr = str.lead.normalizedtitle.split(" ");
+      translated_text = translated_text.replace(new RegExp(str.lead.normalizedtitle, 'gi'), "CENSORED");
+      translated_text = translated_text.replace(new RegExp(str.lead.normalizedtitle + 's', 'gi'), "CENSORED");
+      for (var i = 0; i < arr.length; i++){
+        translated_text = translated_text.replace(new RegExp(arr[i], 'gi'), "CENSORED");
+      }
+      translated_text = translated_text.replace(/\[[\s\S]*?\]/g, '');
+    })
+  );
 }
 
 function draw() {
@@ -159,14 +172,16 @@ function draw() {
   //ctx.arc(x, y, 10, 0, Math.PI*2);
   //ctx.arc(x2, y2, 10, 0, Math.PI*2);
   ctx.fillStyle = "#0095DD";
-  console.log(str.lead.normalizedtitle);
-  //ctx.fillText(str.lead.normalizedtitle, 10, 25);
+  //console.log('TITLE: ' + str.lead.normalizedtitle);
+  ctx.fillText(str.lead.normalizedtitle, 10, 25);
   ctx.fillText(str.lead.description, 10, 50);
 
   // hint/paraphrasing section
   if(change) {
-    n = Math.floor(Math.random() * res.length);
+    n = Math.max(Math.floor(0.25 * res.length), Math.min(Math.floor(0.75 * res.length), Math.floor(Math.random() * res.length)));
+    console.log(n);
     paraphrase(res[n]);
+
     change = !change; 
   } 
 
