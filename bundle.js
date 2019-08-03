@@ -1,32 +1,9 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-var canvas = document.getElementById("myCanvas");
-var ctx = canvas.getContext("2d");
-ctx.font = '12px serif';
-
-var x = canvas.width/2;
-var y = canvas.height/2;
-var x2 = canvas.width/2;
-var y2 = canvas.height/2;
-
-var t = 5;
-var str = "";
-var myImg = new Image(100,200);
-var html;
-var change = false;
-var translated_text = "";
-var n;
-var res;
-var data;
-var r = 0.5;
-var synonyms;
-
 var ed = require('edit-distance');
 var randomWords = require('random-words');
 var nlp = require('compromise');
-// myImg.onload = function() {
-//  ctx.drawImage(myImg, 0, 0);
-// };
 
+// utils
 function editDistance(strA, strB){
   // Define cost functions.
   var insert, remove, update;
@@ -46,12 +23,13 @@ function getWord(){
   return word;
 }
 
-async function getRandomArticle() {
+// HTML request functions
+async function getRandomArticle(game) {
   // for testing sanity, just switch the endpoint to this:
   //const endpoint = "https://en.wikipedia.org/api/rest_v1/page/mobile-sections/blue";
   try {
     let endpoint;
-    if(Math.random() < r){
+    if(Math.random() < 0.7){
       let word = getWord();
       endpoint = "https://en.wikipedia.org/api/rest_v1/page/mobile-sections/"
       endpoint = endpoint + word;
@@ -61,53 +39,15 @@ async function getRandomArticle() {
     }
 
     const response = await fetch(endpoint);
-    data = await response.json();
-    const passed = await filter(data, response);
-    if (!passed) await getRandomArticle();
-    str = data;
-    
-    //html = str.lead.sections[0].text;
-    html = (str.remaining.sections[Math.max(0,Math.floor(Math.random()*str.remaining.sections.length - 3))]).text;
-    var div = document.createElement("div");
-    div.innerHTML = html;
-    var text = div.textContent || div.innerText || "";
-    
-    var doc = nlp(text);
-    res = doc.sentences().toContinuous().out('array');
-
-    change = true;
-
-    if(str.lead.normalizedtitle.split(" ").length == 1){
-      synonyms = await findSynonyms(str.lead.normalizedtitle);
-      synonyms.push(str.lead.normalizedtitle);
-    } else {
-      synonyms = [str.lead.normalizedtitle];
-    }
+    game.data = await response.json();
+    const passed = await filter(game.data, response);
+    if (!passed) await getRandomArticle(game);
+    game.article = game.data;
 
   } catch (error) {
     console.log(error);
   }
 }
-
-const input = document.querySelector('input');
-input.addEventListener('keyup', function onEvent(e) { 
-  if (e.key === "Enter") {
-    // check game logic (guess vs. answer -> transition)
-    let ns = synonyms.map(word => Math.max(word.length / 3, 1));
-    let ks = synonyms.map(word => editDistance(word.toLowerCase(), input.value.toLowerCase()));
-
-    for (var i = 0; i < ns.length; i++){
-      if (ks[i] <= ns[i]) {
-        //console.log("nice!");
-        getRandomArticle();
-        break;
-      }
-    }
-
-    speechSynthesis.speak(new SpeechSynthesisUtterance('What a terrible guess.'));
-    input.value = "";
-  }
-});
 
 async function findSynonyms(word){
   let endpoint = "https://api.datamuse.com/words?ml=";
@@ -119,20 +59,6 @@ async function findSynonyms(word){
   // make plain array of synonyms from json
   var res = data.map(elem => elem.word);
   return res;
-}
-
-
-async function filter(data, response){
-  //console.log(data.lead.sections[0].text.includes("infobox"));
-  if (response.status == 404) {
-    return false;
-  }
-  let title = data.lead.normalizedtitle;
-  return !data.lead.disambiguation 
-      && (data.lead.sections.length > 5)
-      && data.lead.sections[0].text.includes("infobox")
-      && (title.split(" ").length <= 2)
-      && !(title.includes('(') || title.includes(')')); 
 }
 
 async function translate(text, lang){
@@ -151,61 +77,143 @@ async function translate(text, lang){
   return data;
 }
 
-function paraphrase(text){
+function paraphrase(text, game){
   translate(text, "en-ru").then(data =>
     translate(data.text[0], "ru-en").then(function(ans){
-      translated_text = ans.text[0]
+      game.translated_text = ans.text[0]
       // censor title from translated text that is displayed
-      let arr = str.lead.normalizedtitle.split(" ");
-      translated_text = translated_text.replace(new RegExp(str.lead.normalizedtitle, 'gi'), "CENSORED");
-      translated_text = translated_text.replace(new RegExp(str.lead.normalizedtitle + 's', 'gi'), "CENSORED");
+      let arr = game.article.lead.normalizedtitle.split(" ");
+      let article = game.article;
+      let tt = game.translated_text;
+      tt = tt.replace(new RegExp(article.lead.normalizedtitle, 'gi'), "?????");
+      tt = tt.replace(new RegExp(article.lead.normalizedtitle + 's', 'gi'), "?????");
       for (var i = 0; i < arr.length; i++){
-        translated_text = translated_text.replace(new RegExp(arr[i], 'gi'), "CENSORED");
+        tt = tt.replace(new RegExp(arr[i], 'gi'), "?????");
       }
-      translated_text = translated_text.replace(/\[[\s\S]*?\]/g, '');
+      tt = tt.replace(/\[[\s\S]*?\]/g, '');
+      tt = "..." + tt + "...";
+      game.translated_text = tt;
     })
   );
 }
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.beginPath();
-  //ctx.arc(x, y, 10, 0, Math.PI*2);
-  //ctx.arc(x2, y2, 10, 0, Math.PI*2);
-  ctx.fillStyle = "#0095DD";
-  //console.log('TITLE: ' + str.lead.normalizedtitle);
-  ctx.fillText(str.lead.normalizedtitle, 10, 25);
-  ctx.fillText(str.lead.description, 10, 50);
-
-  // hint/paraphrasing section
-  if(change) {
-    n = Math.max(Math.floor(0.25 * res.length), Math.min(Math.floor(0.75 * res.length), Math.floor(Math.random() * res.length)));
-    console.log(n);
-    paraphrase(res[n]);
-
-    change = !change; 
-  } 
-
-  ctx.fillText(translated_text, 10, 75);
-
-  let obj = str.lead.image.urls;
-  res = Object.keys(obj).map(key => obj[key]);
-  myImg.src = res[0];
-
-  ctx.drawImage(myImg,100,100);
-  ctx.fill();
-  ctx.closePath();
-
-  x = (canvas.height/1.5) + 100 * Math.sin(3 * t + Math.PI / 4);
-  y = (canvas.width/3) + 75 * Math.sin(5 * t);
-  x2 = (canvas.height/1.5) + 100 * Math.sin(3 * (t - 0.1) + Math.PI / 4);
-  y2 = (canvas.width/3) + 75 * Math.sin(5 * (t - 0.1));
-
-  t += 0.01;
+async function filter(data, response){
+  if (response.status == 404) {
+    return false;
+  }
+  let title = data.lead.normalizedtitle;
+  //let ans = data.remaining.sections.reduce((total, section) => total + section.text.length, 0); 
+  //console.log(ans);
+  return !data.lead.disambiguation 
+      && (data.lead.sections.length > 7)
+      && data.lead.sections[0].text.includes("infobox")
+      && (title.split(" ").length <= 2)
+      && !(title.includes('(') || title.includes(')'))
+      && data.lead.image.urls.length >= 2;
+      //&& ans >= 93000;
 }
 
-getRandomArticle();
-setInterval(draw, 10);
+// ideally have subclasses for audio, text/canvas stuff,
+// grabbed article, AI bot, whatever else, then 
+// Game class is more or less just some globals
+// with references to subclasses 
+// this should favor decoupled code
+class Game {
+  constructor() {
+    this.lastRender = 0;
+    this.canvas = document.getElementById("myCanvas");
+    this.ctx = this.canvas.getContext("2d");
+    this.ctx.font = '12px serif';
+    this.article;
+    this.myImg = new Image(100,200);
+    this.change = true;
+    this.translated_text;
+    this.data;
+    this.synonyms;
+    this.input = document.querySelector('input');
+    this.input.addEventListener('keyup', function onEvent(e) { 
+      if (e.key === "Enter") {
+      // check game logic (guess vs. answer -> transition)
+      let ns = this.synonyms.map(word => Math.max(word.length / 3, 1));
+      let ks = this.synonyms.map(word => editDistance(word.toLowerCase(), this.input.value.toLowerCase()));
+
+      for (var i = 0; i < ns.length; i++){
+        if (ks[i] <= ns[i]) {
+          this.change = true;
+          break;
+        }
+      }
+
+      speechSynthesis.speak(new SpeechSynthesisUtterance('ooooooooooo'));
+      this.input.value = "";
+      }
+    });
+  }
+
+  draw() {
+    // text
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.beginPath();
+    this.ctx.fillStyle = "#0095DD";
+    this.ctx.fillText(this.article.lead.normalizedtitle, 10, 25);
+    this.ctx.fillText(this.article.lead.description, 10, 50);
+    this.ctx.fillText(this.translated_text, 10, 75);
+
+    // images
+    let obj = this.article.lead.image.urls;
+    let articleImages = Object.keys(obj).map(key => obj[key]);
+    this.myImg.src = articleImages[0];
+    this.ctx.drawImage(this.myImg,100,100);
+    this.ctx.fill();
+    this.ctx.closePath();
+  }
+
+  async update(dt) {
+    // hint/paraphrasing section
+    if(this.change) {
+      await getRandomArticle(this);
+
+      //html = article.lead.sections[0].text;
+      // each time gets a random section so each time grabs new translated text ...
+      // thus the glitchy rendering of a bunch of strings before it settles
+      let article = this.article;
+      let html = (article.remaining.sections[Math.max(0,Math.floor(Math.random()*article.remaining.sections.length - 4))]).text;
+      let div = document.createElement("div");
+      div.innerHTML = html;
+      let text = div.textContent || div.innerText || "";
+      
+      let doc = nlp(text);
+      let articleSentences = doc.sentences().toContinuous().out('array');
+
+      if(article.lead.normalizedtitle.split(" ").length == 1){
+        this.synonyms = await findSynonyms(article.lead.normalizedtitle);
+        this.synonyms.push(article.lead.normalizedtitle);
+      } else {
+        this.synonyms = [article.lead.normalizedtitle];
+      }
+
+      let n = Math.max(Math.floor(0.25 * articleSentences.length), Math.min(Math.floor(0.75 * articleSentences.length), Math.floor(Math.random() * articleSentences.length)));
+      paraphrase(articleSentences[n], this);
+
+      this.change = false;
+    }
+  }
+}
+
+var game = new Game();
+
+async function loop(timestamp) {
+  var dt = timestamp - game.lastRender;
+
+  await game.update(dt);
+  game.draw();
+
+  game.lastRender = timestamp;
+  window.requestAnimationFrame(loop);
+}
+
+window.requestAnimationFrame(loop);
+
 },{"compromise":2,"edit-distance":3,"random-words":7}],2:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.nlp = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(_dereq_,module,exports){
