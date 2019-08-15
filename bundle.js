@@ -29,7 +29,7 @@ async function getRandomArticle(game) {
   //const endpoint = "https://en.wikipedia.org/api/rest_v1/page/mobile-sections/blue";
   try {
     let endpoint;
-    if(Math.random() < 0.7){
+    if(Math.random() < 0.3){
       let word = getWord();
       endpoint = "https://en.wikipedia.org/api/rest_v1/page/mobile-sections/"
       endpoint = endpoint + word;
@@ -74,6 +74,7 @@ async function translate(text, lang){
 
   let response = await fetch(endpoint);
   let data = await response.json();
+  if (response.status == 404) return translate(text, lang);
   return data;
 }
 
@@ -105,11 +106,12 @@ async function filter(data, response){
   //let ans = data.remaining.sections.reduce((total, section) => total + section.text.length, 0); 
   //console.log(ans);
   return !data.lead.disambiguation 
-      && (data.lead.sections.length > 7)
-      && data.lead.sections[0].text.includes("infobox")
-      && (title.split(" ").length <= 2)
-      && !(title.includes('(') || title.includes(')'))
-      && data.lead.image.urls.length >= 2;
+      && (data.lead.sections.length > 5)
+      // && data.lead.sections[0].text.includes("infobox") <-- THIS SEEMS TO GIVE WORSE RESULTS
+      && (title.split(" ").length <= 3)
+      // && !(title.includes('(') || title.includes(')')) <- JUST REMOVE IT FROM THE TITLE
+      //                                                     IF IT'S SO UGLY
+      //&& data.lead.image.urls.length >= 2; <- THIS FILTERS WAYY TOO MUCH.
       //&& ans >= 93000;
 }
 
@@ -129,25 +131,9 @@ class Game {
     this.change = true;
     this.translated_text;
     this.data;
-    this.synonyms;
+    this.synonyms = [];
+    this.robot = new Robot();
     this.input = document.querySelector('input');
-    this.input.addEventListener('keyup', function onEvent(e) { 
-      if (e.key === "Enter") {
-      // check game logic (guess vs. answer -> transition)
-      let ns = this.synonyms.map(word => Math.max(word.length / 3, 1));
-      let ks = this.synonyms.map(word => editDistance(word.toLowerCase(), this.input.value.toLowerCase()));
-
-      for (var i = 0; i < ns.length; i++){
-        if (ks[i] <= ns[i]) {
-          this.change = true;
-          break;
-        }
-      }
-
-      speechSynthesis.speak(new SpeechSynthesisUtterance('ooooooooooo'));
-      this.input.value = "";
-      }
-    });
   }
 
   draw() {
@@ -185,12 +171,14 @@ class Game {
       let doc = nlp(text);
       let articleSentences = doc.sentences().toContinuous().out('array');
 
-      if(article.lead.normalizedtitle.split(" ").length == 1){
+      //if(article.lead.normalizedtitle.split(" ").length == 1){
         this.synonyms = await findSynonyms(article.lead.normalizedtitle);
         this.synonyms.push(article.lead.normalizedtitle);
-      } else {
-        this.synonyms = [article.lead.normalizedtitle];
-      }
+        console.log(this.synonyms);
+      // } else {
+      //   this.synonyms = [article.lead.normalizedtitle];
+      //   console.log('what the fuck');
+      // }
 
       let n = Math.max(Math.floor(0.25 * articleSentences.length), Math.min(Math.floor(0.75 * articleSentences.length), Math.floor(Math.random() * articleSentences.length)));
       paraphrase(articleSentences[n], this);
@@ -198,9 +186,94 @@ class Game {
       this.change = false;
     }
   }
+
+  endGame() {
+    console.log("ummm...");
+  }
+}
+
+// 3 states:
+// happy, concerned, gg
+// transitions:
+// happy -> concerned
+// concerned -> happy, gg
+// gg -| 
+class Robot {
+  constructor() {
+    this.state = "happy";
+    this.trust = 0.55;
+  }
+
+  // return true if should continue the game
+  // else false
+  update(answerIsGood) {
+    if (answerIsGood == "correct") {
+      this.trust += 0.05;
+    } else {
+      this.trust -= 0.05;
+    }
+    switch (this.state){
+      case "happy":
+        if (this.trust < 0.5){
+          this.state = "concerned";
+        }
+        break;
+      case "concerned":
+        if (this.trust < 0.25) {
+          this.state = "gg";
+        } else if (this.trust > 0.5) {
+          this.state = "happy";
+        }
+      case "gg":
+        return false;
+        break;
+    }
+    return true;
+  }
+
+  respond() {
+    switch (this.state){
+      case "happy":
+        return "Wow, I didn't know you were so smart";
+      case "concerned":
+        return "Are you sure about that?";
+      default:
+        return "I think I have to find someone else... sorry...";
+    }
+  }
 }
 
 var game = new Game();
+
+// define input - must be outside class declaration?
+game.input.addEventListener('keyup', function onEvent(e) { 
+  if (e.key === "Enter") {
+  // check game logic (guess vs. answer -> transition)
+  let ns = (game.synonyms).map(word => Math.max(word.length / 3, 1));
+  let ks = (game.synonyms).map(word => editDistance(word.toLowerCase(), game.input.value.toLowerCase()));
+
+  let continueGame;
+  for (var i = 0; i < ns.length; i++){
+    if (ks[i] <= ns[i]) {
+      game.change = true;
+      break;
+    }
+  }
+
+  // this is stupid because the game will only end if the answer is incorrect one last time
+  if (game.change) {
+    continueGame = game.robot.update("correct");
+  } else {
+    continueGame = game.robot.update("incorrect");
+  }
+
+  if(!continueGame){
+    game.endGame();
+  }
+  speechSynthesis.speak(new SpeechSynthesisUtterance(game.robot.respond()));
+  game.input.value = "";
+  }
+});
 
 async function loop(timestamp) {
   var dt = timestamp - game.lastRender;
