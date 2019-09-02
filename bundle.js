@@ -279,7 +279,8 @@ async function loop(timestamp) {
   await game.update(dt);
   try { 
     game.draw();
-    term.resize(5,100);
+    //term.fit();
+    term.resize(50,5);
   } catch(error) {
     console.log(error);
   }
@@ -297,28 +298,6 @@ term.open(document.getElementById('terminal'));
 
 function terminalWrite(s) { term.writeln(s);}
 
-<<<<<<< HEAD
-function terminalRead() {
-  term.prompt();
-  term.on('key', function(key, ev) {
-      const printable = !ev.altKey && !ev.altGraphKey && !ev.ctrlKey && !ev.metaKey;
-      if (ev.keyCode === 13) {
-          term.prompt();
-          checkGame();
-          str = '';
-      } else if (ev.keyCode === 8) {
-          // Do not delete the prompt
-          if (term._core.buffer.x > 2) {
-              term.write('\b \b');
-          }
-      } else if (printable) {
-          term.write(key);
-          str = str.concat(key)
-      }
-  });
-}
-=======
->>>>>>> f823ecbeb2c0d06398110892da5481605b3aec55
 function runFakeTerminal() 
 {
     if (term._initialized) {
