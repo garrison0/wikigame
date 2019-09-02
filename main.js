@@ -171,9 +171,9 @@ class Game {
       let articleSentences = doc.sentences().toContinuous().out('array');
 
       //if(article.lead.normalizedtitle.split(" ").length == 1){
-        this.synonyms = await findSynonyms(article.lead.normalizedtitle);
-        this.synonyms.push(article.lead.normalizedtitle);
-        console.log(this.synonyms);
+      this.synonyms = await findSynonyms(article.lead.normalizedtitle);
+      this.synonyms.push(article.lead.normalizedtitle);
+      console.log(this.synonyms);
       // } else {
       //   this.synonyms = [article.lead.normalizedtitle];
       //   console.log('what the fuck');
@@ -187,6 +187,7 @@ class Game {
   }
 
   endGame() {
+    // set this.draw to a frowny face and stop updating
     console.log("ummm...");
   }
 }
@@ -243,37 +244,6 @@ class Robot {
 
 var game = new Game();
 
-<<<<<<< HEAD
-// define input - must be outside class declaration?
-game.input.addEventListener('keyup', function onEvent(e) { 
-  if (e.key === "Enter") {
-    // check game logic (guess vs. answer -> transition)
-    let ns = (game.synonyms).map(word => Math.max(word.length / 3, 1));
-    let ks = (game.synonyms).map(word => editDistance(word.toLowerCase(), game.input.value.toLowerCase()));
-
-    let continueGame;
-    for (var i = 0; i < ns.length; i++){
-      if (ks[i] <= ns[i]) {
-        game.change = true;
-        break;
-      }
-    }
-
-    // this is stupid because the game will only end if the answer is incorrect one last time
-    if (game.change) {
-      continueGame = game.robot.update("correct");
-    } else {
-      continueGame = game.robot.update("incorrect");
-    }
-
-    if(!continueGame){
-      game.endGame();
-    }
-    speechSynthesis.speak(new SpeechSynthesisUtterance(game.robot.respond()));
-    game.input.value = "";
-    }
-});
-=======
 function checkGame()
 {
       // check game logic (guess vs. answer -> transition)
@@ -306,14 +276,23 @@ async function loop(timestamp) {
   var dt = timestamp - game.lastRender;
 
   await game.update(dt);
-  game.draw();
+  try { 
+    game.draw();
+    term.resize(5,100);
+  } catch(error) {
+    console.log(error);
+  }
 
   game.lastRender = timestamp;
   window.requestAnimationFrame(loop);
 }
+
 var str = ''
+
+Terminal.applyAddon(fit); 
 var term = new Terminal();
-term.open(document.getElementById('terminal'));
+term.open(document.getElementById('terminal')); 
+
 
 function terminalWrite(s) { term.writeln(s);}
 
@@ -323,7 +302,6 @@ function terminalRead() {
       const printable = !ev.altKey && !ev.altGraphKey && !ev.ctrlKey && !ev.metaKey;
       if (ev.keyCode === 13) {
           term.prompt();
-          console.log(str);
           checkGame();
           str = '';
       } else if (ev.keyCode === 8) {

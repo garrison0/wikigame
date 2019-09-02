@@ -172,9 +172,9 @@ class Game {
       let articleSentences = doc.sentences().toContinuous().out('array');
 
       //if(article.lead.normalizedtitle.split(" ").length == 1){
-        this.synonyms = await findSynonyms(article.lead.normalizedtitle);
-        this.synonyms.push(article.lead.normalizedtitle);
-        console.log(this.synonyms);
+      this.synonyms = await findSynonyms(article.lead.normalizedtitle);
+      this.synonyms.push(article.lead.normalizedtitle);
+      console.log(this.synonyms);
       // } else {
       //   this.synonyms = [article.lead.normalizedtitle];
       //   console.log('what the fuck');
@@ -188,6 +188,7 @@ class Game {
   }
 
   endGame() {
+    // set this.draw to a frowny face and stop updating
     console.log("ummm...");
   }
 }
@@ -276,14 +277,23 @@ async function loop(timestamp) {
   var dt = timestamp - game.lastRender;
 
   await game.update(dt);
-  game.draw();
+  try { 
+    game.draw();
+    term.resize(5,100);
+  } catch(error) {
+    console.log(error);
+  }
 
   game.lastRender = timestamp;
   window.requestAnimationFrame(loop);
 }
+
 var str = ''
+
+Terminal.applyAddon(fit); 
 var term = new Terminal();
-term.open(document.getElementById('terminal'));
+term.open(document.getElementById('terminal')); 
+
 
 function terminalWrite(s) { term.writeln(s);}
 
@@ -293,7 +303,6 @@ function terminalRead() {
       const printable = !ev.altKey && !ev.altGraphKey && !ev.ctrlKey && !ev.metaKey;
       if (ev.keyCode === 13) {
           term.prompt();
-          console.log(str);
           checkGame();
           str = '';
       } else if (ev.keyCode === 8) {
