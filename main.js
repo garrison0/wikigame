@@ -286,47 +286,37 @@ term.open(document.getElementById('terminal'));
 
 function terminalWrite(s) { term.writeln(s);}
 
-function terminalRead() {
-  term.prompt();
-  term.on('key', function(key, ev) {
-      const printable = !ev.altKey && !ev.altGraphKey && !ev.ctrlKey && !ev.metaKey;
-      if (ev.keyCode === 13) {
-          term.prompt();
-          console.log(str);
-          checkGame();
-          str = '';
-      } else if (ev.keyCode === 8) {
-          // Do not delete the prompt
-          if (term._core.buffer.x > 2) {
-              term.write('\b \b');
-          }
-      } else if (printable) {
-          term.write(key);
-          str = str.concat(key)
-      }
-  });
-}
 function runFakeTerminal() 
 {
     if (term._initialized) {
         return;
     }
-
     term._initialized = true;
 
     term.prompt = () => {
         term.write('\r\n$ ');
     };
+    terminalWrite('> What is your guess?');
+    term.prompt();
+    term.on('key', function(key, ev) {
+        const printable = !ev.altKey && !ev.altGraphKey && !ev.ctrlKey && !ev.metaKey;
+        if (ev.keyCode === 13) {
+            term.prompt();
+            console.log(str);
+            checkGame();
+            str = '';
+        } else if (ev.keyCode === 8) {
+            // Do not delete the prompt
+            if (term._core.buffer.x > 2) {
+                term.write('\b \b');
+            str = str.slice(0, -1); 
+            }
+        } else if (printable) {
+            term.write(key);
+            str = str.concat(key)
+        }
+    });
 
-    terminalWrite('Welcome to xterm.js');
-    terminalWrite('This is a local terminal emulation, without a real terminal in the back-end.');
-    terminalWrite('Type some keys and commands to play around.');
-    terminalWrite('');
-
-    terminalRead();
-    // term.on('paste', function(data) {
-    //     term.write(data);
-    // });
 }
 runFakeTerminal();
 window.requestAnimationFrame(loop);
