@@ -7,6 +7,7 @@
     "bootstrap": "^4.3.1",
     "browserify": "^16.3.0",
     "bundle": "^2.1.0",
+    "compromise": "^11.14.3",
     "edit-distance": "^1.0.2",
     "random-words": "^1.1.0",
     "terminal-kit": "^1.29.1",
