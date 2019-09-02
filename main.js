@@ -132,7 +132,7 @@ class Game {
     this.data;
     this.synonyms = [];
     this.robot = new Robot();
-    this.input = document.querySelector('input');
+    this.input;
   }
 
   draw() {
@@ -243,6 +243,7 @@ class Robot {
 
 var game = new Game();
 
+<<<<<<< HEAD
 // define input - must be outside class declaration?
 game.input.addEventListener('keyup', function onEvent(e) { 
   if (e.key === "Enter") {
@@ -272,6 +273,35 @@ game.input.addEventListener('keyup', function onEvent(e) {
     game.input.value = "";
     }
 });
+=======
+function checkGame()
+{
+      // check game logic (guess vs. answer -> transition)
+      let ns = (game.synonyms).map(word => Math.max(word.length / 3, 1));
+      let ks = (game.synonyms).map(word => editDistance(word.toLowerCase(), str));
+    
+      let continueGame;
+      for (var i = 0; i < ns.length; i++){
+        if (ks[i] <= ns[i]) {
+          game.change = true;
+          break;
+        }
+      }
+    
+      // this is stupid because the game will only end if the answer is incorrect one last time
+      if (game.change) {
+        continueGame = game.robot.update("correct");
+      } else {
+        continueGame = game.robot.update("incorrect");
+      }
+    
+      if(!continueGame){
+        game.endGame();
+      }
+      speechSynthesis.speak(new SpeechSynthesisUtterance(game.robot.respond()));
+      str = "";
+}
+>>>>>>> afaea55a0f68b6829011d06310545676879acdb9
 
 async function loop(timestamp) {
   var dt = timestamp - game.lastRender;
@@ -282,5 +312,53 @@ async function loop(timestamp) {
   game.lastRender = timestamp;
   window.requestAnimationFrame(loop);
 }
+var str = ''
+var term = new Terminal();
+term.open(document.getElementById('terminal'));
 
+function terminalWrite(s) { term.writeln(s);}
+
+function terminalRead() {
+  term.prompt();
+  term.on('key', function(key, ev) {
+      const printable = !ev.altKey && !ev.altGraphKey && !ev.ctrlKey && !ev.metaKey;
+      if (ev.keyCode === 13) {
+          term.prompt();
+          console.log(str);
+          checkGame();
+          str = '';
+      } else if (ev.keyCode === 8) {
+          // Do not delete the prompt
+          if (term._core.buffer.x > 2) {
+              term.write('\b \b');
+          }
+      } else if (printable) {
+          term.write(key);
+          str = str.concat(key)
+      }
+  });
+}
+function runFakeTerminal() 
+{
+    if (term._initialized) {
+        return;
+    }
+
+    term._initialized = true;
+
+    term.prompt = () => {
+        term.write('\r\n$ ');
+    };
+
+    terminalWrite('Welcome to xterm.js');
+    terminalWrite('This is a local terminal emulation, without a real terminal in the back-end.');
+    terminalWrite('Type some keys and commands to play around.');
+    terminalWrite('');
+
+    terminalRead();
+    // term.on('paste', function(data) {
+    //     term.write(data);
+    // });
+}
+runFakeTerminal();
 window.requestAnimationFrame(loop);
