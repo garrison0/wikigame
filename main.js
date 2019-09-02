@@ -246,31 +246,31 @@ var game = new Game();
 // define input - must be outside class declaration?
 game.input.addEventListener('keyup', function onEvent(e) { 
   if (e.key === "Enter") {
-  // check game logic (guess vs. answer -> transition)
-  let ns = (game.synonyms).map(word => Math.max(word.length / 3, 1));
-  let ks = (game.synonyms).map(word => editDistance(word.toLowerCase(), game.input.value.toLowerCase()));
+    // check game logic (guess vs. answer -> transition)
+    let ns = (game.synonyms).map(word => Math.max(word.length / 3, 1));
+    let ks = (game.synonyms).map(word => editDistance(word.toLowerCase(), game.input.value.toLowerCase()));
 
-  let continueGame;
-  for (var i = 0; i < ns.length; i++){
-    if (ks[i] <= ns[i]) {
-      game.change = true;
-      break;
+    let continueGame;
+    for (var i = 0; i < ns.length; i++){
+      if (ks[i] <= ns[i]) {
+        game.change = true;
+        break;
+      }
     }
-  }
 
-  // this is stupid because the game will only end if the answer is incorrect one last time
-  if (game.change) {
-    continueGame = game.robot.update("correct");
-  } else {
-    continueGame = game.robot.update("incorrect");
-  }
+    // this is stupid because the game will only end if the answer is incorrect one last time
+    if (game.change) {
+      continueGame = game.robot.update("correct");
+    } else {
+      continueGame = game.robot.update("incorrect");
+    }
 
-  if(!continueGame){
-    game.endGame();
-  }
-  speechSynthesis.speak(new SpeechSynthesisUtterance(game.robot.respond()));
-  game.input.value = "";
-  }
+    if(!continueGame){
+      game.endGame();
+    }
+    speechSynthesis.speak(new SpeechSynthesisUtterance(game.robot.respond()));
+    game.input.value = "";
+    }
 });
 
 async function loop(timestamp) {
