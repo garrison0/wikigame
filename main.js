@@ -301,7 +301,6 @@ function checkGame()
       speechSynthesis.speak(new SpeechSynthesisUtterance(game.robot.respond()));
       str = "";
 }
->>>>>>> afaea55a0f68b6829011d06310545676879acdb9
 
 async function loop(timestamp) {
   var dt = timestamp - game.lastRender;
