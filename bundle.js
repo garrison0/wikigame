@@ -125,7 +125,7 @@ class Game {
     this.lastRender = 0;
     this.canvas = document.getElementById("myCanvas");
     this.ctx = this.canvas.getContext("2d");
-    this.ctx.font = '12px serif';
+    this.ctx.font = '10px serif';
     this.article;
     this.myImg = new Image(100,200);
     this.change = true;
@@ -138,6 +138,22 @@ class Game {
 
   draw() {
     // text
+    let dpi = window.devicePixelRatio;
+
+    function fix_dpi() {
+    //get CSS height
+    //the + prefix casts it to an integer
+    //the slice method gets rid of "px"
+    let style_height = +getComputedStyle(this.canvas).getPropertyValue("height").slice(0, -2);
+    //get CSS width
+    let style_width = +getComputedStyle(this.canvas).getPropertyValue("width").slice(0, -2);
+    //scale the canvas
+    this.canvas.setAttribute('height', style_height * dpi);
+    this.canvas.setAttribute('width', style_width * dpi);
+    }
+
+    fix_dpi();
+
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.beginPath();
     this.ctx.fillStyle = "#0095DD";
@@ -242,6 +258,8 @@ class Robot {
     }
   }
 }
+//get DPI
+
 
 var game = new Game();
 
