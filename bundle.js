@@ -125,25 +125,21 @@ class Game {
     this.lastRender = 0;
     this.canvas = document.getElementById("myCanvas");
     this.ctx = this.canvas.getContext("2d");
-    this.ctx.font = '10px serif';
+    this.ctx.font = '5px serif';
     this.article;
-    this.myImg = new Image(100,200);
+    this.myImg = new Image();
     this.change = true;
-    this.translated_text;
+    this.translated_text = '';
     this.data;
     this.synonyms = [];
     this.robot = new Robot();
     this.input;
   }
-
-  draw() {
-    // text
-    let dpi = window.devicePixelRatio;
-
-    function fix_dpi() {
+  fix_dpi() {
     //get CSS height
     //the + prefix casts it to an integer
     //the slice method gets rid of "px"
+    let dpi = window.devicePixelRatio;
     let style_height = +getComputedStyle(this.canvas).getPropertyValue("height").slice(0, -2);
     //get CSS width
     let style_width = +getComputedStyle(this.canvas).getPropertyValue("width").slice(0, -2);
@@ -152,22 +148,59 @@ class Game {
     this.canvas.setAttribute('width', style_width * dpi);
     }
 
-    fix_dpi();
+    wrapText(context, text, x, y, maxWidth, lineHeight) {
+      var words = text.split(' ');
+      var line = '';
 
+      for(var n = 0; n < words.length; n++) {
+        var testLine = line + words[n] + ' ';
+        var metrics = context.measureText(testLine);
+        var testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+          context.fillText(line, x, y);
+          line = words[n] + ' ';
+          y += lineHeight;
+        }
+        else {
+          line = testLine;
+        }
+      }
+      context.fillText(line, x, y);
+    }
+
+  draw() {
+    // text
+          
+    var context = this.ctx;
+    var maxWidth = 400;
+    var lineHeight = 25;
+    var x = 10;
+    var y = 10;
+
+    this.ctx.font = '15px serif';
+    this.ctx.fillStyle = "#000000";
+    
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.beginPath();
-    this.ctx.fillStyle = "#0095DD";
-    this.ctx.fillText(this.article.lead.normalizedtitle, 10, 25);
-    this.ctx.fillText(this.article.lead.description, 10, 50);
-    this.ctx.fillText(this.translated_text, 10, 75);
 
     // images
     let obj = this.article.lead.image.urls;
     let articleImages = Object.keys(obj).map(key => obj[key]);
     this.myImg.src = articleImages[0];
-    this.ctx.drawImage(this.myImg,100,100);
+    console.log(this.myImg.naturalWidth);
+    console.log(this.myImg.naturalHeight);
+    this.ctx.drawImage(this.myImg, 175,120, this.myImg.naturalWidth * 0.3, this.myImg.naturalHeight * 0.3);
+
+    console.log(this.article.lead.normalizedtitle);
+    //this.ctx.fillText(this.article.lead.description, 10, 25);
+    this.wrapText(context, this.article.lead.description, 60, 25, 400, 15);
+    //this.ctx.fillText(this.translated_text, 10, 50);
+    this.wrapText(context, this.translated_text, 60, 50, 400, 15);
+
+
     this.ctx.fill();
     this.ctx.closePath();
+
   }
 
   async update(dt) {
@@ -298,7 +331,6 @@ async function loop(timestamp) {
   try { 
     game.draw();
     //term.fit();
-    term.resize(50,5);
   } catch(error) {
     console.log(error);
   }
@@ -307,7 +339,7 @@ async function loop(timestamp) {
   window.requestAnimationFrame(loop);
 }
 
-var str = ''
+var str = '';
 
 Terminal.applyAddon(fit); 
 var term = new Terminal();
@@ -348,6 +380,8 @@ function runFakeTerminal()
     });
 
 }
+term.resize(50,5);
+game.fix_dpi();
 runFakeTerminal();
 window.requestAnimationFrame(loop);
 
