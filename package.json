@@ -2,6 +2,7 @@
   "name": "wikigame",
   "version": "1.0.0",
   "description": "a game about wikipedia ",
+  "start":"bundle.js",
   "main": "main.js",
   "dependencies": {
     "bootstrap": "^4.3.1",
@@ -16,7 +17,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "index.html"
   },
   "repository": {
     "type": "git",
