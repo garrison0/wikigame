@@ -80,7 +80,7 @@ async function translate(text, lang){
 function paraphrase(text, game){
   translate(text, "en-ru").then(data =>
     translate(data.text[0], "ru-en").then(function(ans){
-      game.translated_text = ans.text[0]
+      game.translated_text = ans.text[0];
       // censor title from translated text that is displayed
       let arr = game.article.lead.normalizedtitle.split(" ");
       let article = game.article;
@@ -180,8 +180,11 @@ class Game {
       // }
 
       let n = Math.max(Math.floor(0.25 * articleSentences.length), Math.min(Math.floor(0.75 * articleSentences.length), Math.floor(Math.random() * articleSentences.length)));
-      paraphrase(articleSentences[n], this);
 
+      let response = true;
+      while(response) {
+        response = paraphrase(articleSentences[n], this);
+      }
       this.change = false;
     }
   }
@@ -293,7 +296,6 @@ var str = ''
 Terminal.applyAddon(fit); 
 var term = new Terminal();
 term.open(document.getElementById('terminal')); 
-
 
 function terminalWrite(s) { term.writeln(s);}
 
