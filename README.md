@@ -1,4 +1,7 @@
 # wikigame
+
+a WIP 
+
 to recompile javascript: 
  watchify main.js -o bundle.js
 
