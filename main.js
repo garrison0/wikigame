@@ -120,31 +120,34 @@ async function filter(data, response){
 // with references to subclasses 
 // this should favor decoupled code
 class Game {
-  constructor() {
-    this.lastRender = 0;
-    this.canvas = document.getElementById("myCanvas");
-    this.ctx = this.canvas.getContext("2d");
-    this.ctx.font = '5px serif';
-    this.article;
-    this.myImg = new Image();
-    this.change = true;
-    this.translated_text = '';
-    this.data;
-    this.synonyms = [];
-    this.robot = new Robot();
-    this.input;
-  }
-  fix_dpi() {
-    //get CSS height
-    //the + prefix casts it to an integer
-    //the slice method gets rid of "px"
-    let dpi = window.devicePixelRatio;
-    let style_height = +getComputedStyle(this.canvas).getPropertyValue("height").slice(0, -2);
-    //get CSS width
-    let style_width = +getComputedStyle(this.canvas).getPropertyValue("width").slice(0, -2);
-    //scale the canvas
-    this.canvas.setAttribute('height', style_height * dpi);
-    this.canvas.setAttribute('width', style_width * dpi);
+    constructor() {
+      this.lastRender = 0;
+      this.canvas = document.getElementById("myCanvas");
+      this.canvas.setAttribute('width', 1000); 
+      this.canvas.setAttribute('height', 400); 
+      this.ctx = this.canvas.getContext("2d");
+      this.ctx.font = '5px serif';
+      this.article;
+      this.myImg = new Image();
+      this.change = true;
+      this.translated_text = '';
+      this.data;
+      this.synonyms = [];
+      this.robot = new Robot();
+      this.input;
+    }
+
+    fix_dpi() {
+      //get CSS height
+      //the + prefix casts it to an integer
+      //the slice method gets rid of "px"
+      let dpi = window.devicePixelRatio;
+      let style_height = +getComputedStyle(this.canvas).getPropertyValue("height").slice(0, -2);
+      //get CSS width
+      let style_width = +getComputedStyle(this.canvas).getPropertyValue("width").slice(0, -2);
+      //scale the canvas
+      this.canvas.setAttribute('height', style_height * dpi);
+      this.canvas.setAttribute('width', style_width * dpi);
     }
 
     wrapText(context, text, x, y, maxWidth, lineHeight) {
@@ -182,24 +185,20 @@ class Game {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.beginPath();
 
+    console.log(this.article.lead.normalizedtitle);
+    //this.ctx.fillText(this.article.lead.description, 10, 25);
+    this.wrapText(context, this.article.lead.description, 60, 75, 400, 15);
+    //this.ctx.fillText(this.translated_text, 10, 50);
+    this.wrapText(context, this.translated_text, 60, 125, 400, 15);
+
     // images
     let obj = this.article.lead.image.urls;
     let articleImages = Object.keys(obj).map(key => obj[key]);
-    this.myImg.src = articleImages[0];
-    console.log(this.myImg.naturalWidth);
-    console.log(this.myImg.naturalHeight);
-    this.ctx.drawImage(this.myImg, 175,120, this.myImg.naturalWidth * 0.3, this.myImg.naturalHeight * 0.3);
-
-    console.log(this.article.lead.normalizedtitle);
-    //this.ctx.fillText(this.article.lead.description, 10, 25);
-    this.wrapText(context, this.article.lead.description, 60, 25, 400, 15);
-    //this.ctx.fillText(this.translated_text, 10, 50);
-    this.wrapText(context, this.translated_text, 60, 50, 400, 15);
-
+    this.myImg.src = articleImages[articleImages.length - 1];
+    this.ctx.drawImage(this.myImg, this.canvas.width / 2, this.canvas.height / 6, this.myImg.naturalWidth * 0.4, this.myImg.naturalHeight * 0.4);
 
     this.ctx.fill();
     this.ctx.closePath();
-
   }
 
   async update(dt) {
@@ -382,6 +381,6 @@ function runFakeTerminal()
 
 }
 term.resize(50,5);
-game.fix_dpi();
+//game.fix_dpi();
 runFakeTerminal();
 window.requestAnimationFrame(loop);
