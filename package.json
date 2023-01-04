@@ -11,7 +11,7 @@
     "compromise": "^11.14.3",
     "edit-distance": "^1.0.2",
     "random-words": "^1.1.0",
-    "terminal-kit": "^1.29.1",
+    "terminal-kit": "^3.0.0",
     "watchify": "^3.11.1",
     "xterm": "^3.14.5"
   },
